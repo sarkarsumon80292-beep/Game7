@@ -1,0 +1,262 @@
+<meta name='viewport' content='width=device-width, initial-scale=1'/><!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ultimate Math Titan - 100 Levels</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;500&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: #050505;
+            color: #00ffcc;
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            background: rgba(15, 15, 15, 0.95);
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.2);
+            border-radius: 15px;
+            padding: 40px;
+            width: 450px;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .level-header {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            margin-bottom: 10px;
+            color: #ff0055;
+            text-shadow: 0 0 10px #ff0055;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 6px;
+            background: #1a1a1a;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0055, #00ffcc);
+            width: 0%;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .question-area {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            margin: 40px 0;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        input {
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid #00ffcc;
+            color: white;
+            font-size: 2rem;
+            width: 180px;
+            text-align: center;
+            outline: none;
+            font-family: 'Orbitron', sans-serif;
+            margin-bottom: 30px;
+        }
+
+        .submit-btn {
+            background: transparent;
+            border: 2px solid #00ffcc;
+            color: #00ffcc;
+            padding: 15px 45px;
+            font-family: 'Orbitron', sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            letter-spacing: 2px;
+        }
+
+        .submit-btn:hover {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 30px #00ffcc;
+        }
+
+        .feedback {
+            margin-top: 25px;
+            height: 25px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .reset-link {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            font-size: 10px;
+            color: #444;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        /* Animations */
+        .shake { animation: shake 0.4s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+        }
+
+        .flash { animation: flash 0.5s; }
+        @keyframes flash {
+            0% { background: rgba(0, 255, 204, 0.2); }
+            100% { background: rgba(15, 15, 15, 0.95); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="board">
+    <div class="level-header">PHASE: <span id="lvl-display">1</span> / 100</div>
+    <div class="progress-container">
+        <div class="progress-bar" id="progress"></div>
+    </div>
+
+    <div class="question-area" id="question">INITIATING...</div>
+
+    <div class="input-group">
+        <input type="number" id="user-input" step="any" autofocus placeholder="?">
+    </div>
+
+    <button class="submit-btn" onclick="checkAnswer()">VERIFY</button>
+    <div class="feedback" id="msg"></div>
+    
+    <div class="reset-link" onclick="resetGame()">System Reset</div>
+</div>
+
+<script>
+    let currentLevel = parseInt(localStorage.getItem('titanLevel')) || 1;
+    let currentAnswer = 0;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Sound Generator Function
+    function playSound(freq, type, duration) {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
+
+    function generateQuestion() {
+        if (currentLevel > 100) {
+            document.getElementById('board').innerHTML = "<h1>TITAN CONQUERED</h1><p>You have reached the ultimate logic state.</p>";
+            playSound(600, 'square', 0.5);
+            return;
+        }
+
+        document.getElementById('lvl-display').innerText = currentLevel;
+        document.getElementById('progress').style.width = currentLevel + "%";
+        
+        let qText = "";
+        
+        // Difficulty Logic
+        if (currentLevel <= 20) {
+            let a = rand(10, 50), b = rand(10, 50);
+            currentAnswer = a + b;
+            qText = `${a} + ${b}`;
+        } else if (currentLevel <= 40) {
+            let a = rand(10, 20), b = rand(5, 15);
+            currentAnswer = a * b;
+            qText = `${a} × ${b}`;
+        } else if (currentLevel <= 70) {
+            let a = rand(100, 500), b = rand(50, 99), c = rand(10, 30);
+            currentAnswer = a - b + c;
+            qText = `${a} - ${b} + ${c}`;
+        } else {
+            let a = rand(12, 20);
+            let b = rand(2, 50);
+            currentAnswer = (a * a) + b;
+            qText = `${a}² + ${b}`;
+        }
+
+        document.getElementById('question').innerHTML = qText;
+        document.getElementById('user-input').value = "";
+        document.getElementById('user-input').focus();
+    }
+
+    function checkAnswer() {
+        let val = parseFloat(document.getElementById('user-input').value);
+        let board = document.getElementById('board');
+        let msg = document.getElementById('msg');
+
+        if (val === currentAnswer) {
+            // Success
+            playSound(800, 'sine', 0.2);
+            board.classList.add('flash');
+            msg.style.color = "#00ffcc";
+            msg.innerText = "SUCCESS: NEXT SEQUENCE LOADED";
+            
+            currentLevel++;
+            localStorage.setItem('titanLevel', currentLevel);
+            
+            setTimeout(() => {
+                board.classList.remove('flash');
+                msg.innerText = "";
+                generateQuestion();
+            }, 800);
+        } else {
+            // Fail
+            playSound(150, 'sawtooth', 0.3);
+            board.classList.add('shake');
+            msg.style.color = "#ff0055";
+            msg.innerText = "ERROR: INVALID INPUT";
+            
+            setTimeout(() => board.classList.remove('shake'), 400);
+        }
+    }
+
+    function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function resetGame() {
+        if(confirm("Restart from Level 1?")) {
+            localStorage.setItem('titanLevel', 1);
+            location.reload();
+        }
+    }
+
+    document.getElementById('user-input').addEventListener("keypress", (e) => {
+        if (e.key === "Enter") checkAnswer();
+    });
+
+    // Start Game
+    window.onload = generateQuestion;
+</script>
+
+</body>
+</html>
